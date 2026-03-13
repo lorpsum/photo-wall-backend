@@ -1,36 +1,23 @@
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+import fs from 'fs';
+import path from 'path';
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+export default function handler(req, res) {
+  if (req.method === 'POST') {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'No URL provided' });
 
-  if (req.method !== "GET") {
-    return res.status(405).json({ message: "Method Not Allowed" });
-  }
+    const filePath = path.join(process.cwd(), 'data.json');
+    let data = { images: [] };
 
-  try {
-    const cloudinary = require("cloudinary").v2;
+    if (fs.existsSync(filePath)) {
+      data = JSON.parse(fs.readFileSync(filePath));
+    }
 
-    cloudinary.config({
-      cloud_name: process.env.CLOUD_NAME,
-      api_key: process.env.CLOUD_KEY,
-      api_secret: process.env.CLOUD_SECRET,
-    });
+    data.images.push(url);
+    fs.writeFileSync(filePath, JSON.stringify(data));
 
-    const result = await cloudinary.search
-      .expression("folder:mur_photos")
-      .sort_by("created_at", "desc")
-      .max_results(500)
-      .execute();
-
-    const images = result.resources.map(r => r.secure_url);
-
-    return res.status(200).json({ images });
-
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+    res.status(200).json({ success: true });
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
   }
 }
