@@ -9,5 +9,7 @@ export default async function handler(req, res) {
     images = JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch(e){}
 
-  res.status(200).json({ images });
+  // 🔹 Au lieu de { images: [...] }, on renvoie juste le tableau
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.status(200).json(images);
 }
